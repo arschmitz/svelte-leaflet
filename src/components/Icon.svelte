@@ -1,17 +1,23 @@
 <script>
-    import {getContext} from 'svelte';
-    import L from 'leaflet';
+    import {getContext, onMount} from 'svelte';
 
-    const {getMarker} = getContext(L.Marker);
+    const {getMarker} = getContext('L.Marker');
 
     export let options = {};
 
     let icon;
+    let L;
 
     $: {
-        icon = L.icon(options);
-        getMarker().setIcon(icon);
+        if (L) {
+            icon = L.icon(options);
+            getMarker().setIcon(icon);
+        }
     }
+
+    onMount(async () => {
+        L = await import('leaflet');
+    });
 
     export function getIcon() {
         return icon;

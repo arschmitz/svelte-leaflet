@@ -1,7 +1,5 @@
 <script>
     import {createEventDispatcher, setContext} from 'svelte';
-    import L from 'leaflet';
-
     import EventBridge from '../lib/EventBridge';
 
     export let options = {};
@@ -9,15 +7,17 @@
 
     let map = null;
 
-    setContext(L, {
+    setContext('L', {
         getMap: () => map,
     });
 
     const dispatch = createEventDispatcher();
     let eventBridge;
 
-    function initialize(container) {
+    async function initialize(container) {
+        const L = await import('leaflet');
         map = L.map(container, options);
+
         eventBridge = new EventBridge(map, dispatch, events);
         return {
             destroy: () => {

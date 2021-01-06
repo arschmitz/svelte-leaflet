@@ -1,13 +1,12 @@
 <script>
-    import {createEventDispatcher, getContext, onDestroy} from 'svelte';
-    import L from 'leaflet';
-
+    import {createEventDispatcher, getContext, onDestroy, onMount} from 'svelte';
     import EventBridge from '../lib/EventBridge';
 
-    const {getLayer} = getContext(L.Layer);
+    const {getLayer} = getContext('L.Layer');
 
     export let events = [];
 
+    let L;
     let popup;
     let element;
 
@@ -15,16 +14,24 @@
     let eventBridge;
 
     $: {
-        if (!popup) {
-            popup = L.popup();
-            eventBridge = new EventBridge(popup, dispatch, events);
-            getLayer().bindPopup(popup);
+        if (L) {
+            if (!popup) {
+                popup = L.popup();
+                eventBridge = new EventBridge(popup, dispatch, events);
+                getLayer().bindPopup(popup);
+            }
+            popup.setContent(element);
         }
-        popup.setContent(element);
     }
 
+    onMount(async () => {
+        L = await import('leaflet');
+    });
+
     onDestroy(() => {
-        eventBridge.unregister();
+        if (eventBridge) {
+            eventBridge.unregister();
+        }
     });
 
     export function getPopup() {

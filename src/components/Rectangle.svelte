@@ -1,10 +1,8 @@
 <script>
-    import {createEventDispatcher, getContext, onDestroy, setContext} from 'svelte';
-    import L from 'leaflet';
-
+    import {createEventDispatcher, getContext, onDestroy, onMount, setContext} from 'svelte';
     import EventBridge from '../lib/EventBridge';
 
-    const {getMap} = getContext(L);
+    const {getMap} = getContext('L');
 
     export let latLngBounds;
     export let color = '#3388ff';
@@ -22,8 +20,9 @@
     export let events = [];
 
     let rectangle;
+    let L;
 
-    setContext(L.Layer, {
+    setContext('L.Layer', {
         getLayer: () => rectangle,
     });
 
@@ -31,29 +30,37 @@
     let eventBridge;
 
     $: {
-        if (!rectangle) {
-            rectangle = L.rectangle(latLngBounds, options).addTo(getMap());
-            eventBridge = new EventBridge(rectangle, dispatch, events);
+        if (L) {
+            if (!rectangle) {
+                rectangle = L.rectangle(latLngBounds, options).addTo(getMap());
+                eventBridge = new EventBridge(rectangle, dispatch, events);
+            }
+            rectangle.setBounds(latLngBounds);
+            rectangle.setStyle({
+                color: color,
+                weight: weight,
+                opacity: opacity,
+                lineCap: lineCap,
+                lineJoin: lineJoin,
+                dashArray: dashArray,
+                dashOffset: dashOffset,
+                fill: fill,
+                fillColor: fillColor,
+                fillOpacity: fillOpacity,
+                fillRule: fillRule,
+            });
         }
-        rectangle.setBounds(latLngBounds);
-        rectangle.setStyle({
-            color: color,
-            weight: weight,
-            opacity: opacity,
-            lineCap: lineCap,
-            lineJoin: lineJoin,
-            dashArray: dashArray,
-            dashOffset: dashOffset,
-            fill: fill,
-            fillColor: fillColor,
-            fillOpacity: fillOpacity,
-            fillRule: fillRule,
-        });
     }
 
+    onMount(async () => {
+        L = await import('leaflet');
+    });
+
     onDestroy(() => {
-        eventBridge.unregister();
-        rectangle.removeFrom(getMap());
+        if (eventBridge) {
+            eventBridge.unregister();
+            rectangle.removeFrom(getMap());
+        }
     });
 
     export function getRectangle() {

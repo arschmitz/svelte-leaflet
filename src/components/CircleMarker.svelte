@@ -1,10 +1,8 @@
 <script>
-    import {createEventDispatcher, getContext, onDestroy, setContext} from 'svelte';
-    import L from 'leaflet';
-
+    import {createEventDispatcher, getContext, onDestroy, onMount, setContext} from 'svelte';
     import EventBridge from '../lib/EventBridge';
 
-    const {getMap} = getContext(L);
+    const {getMap} = getContext('L');
 
     export let latLng;
     export let radius = 10;
@@ -23,8 +21,9 @@
     export let events = [];
 
     let circleMarker;
+    let L;
 
-    setContext(L.Layer, {
+    setContext('L.Layer', {
         getLayer: () => circleMarker,
     });
 
@@ -32,30 +31,38 @@
     let eventBridge;
 
     $: {
-        if (!circleMarker) {
-            circleMarker = L.circleMarker(latLng, options).addTo(getMap());
-            eventBridge = new EventBridge(circleMarker, dispatch, events);
+        if (L) {
+            if (!circleMarker) {
+                circleMarker = L.circleMarker(latLng, options).addTo(getMap());
+                eventBridge = new EventBridge(circleMarker, dispatch, events);
+            }
+            circleMarker.setLatLng(latLng);
+            circleMarker.setRadius(radius);
+            circleMarker.setStyle({
+                color: color,
+                weight: weight,
+                opacity: opacity,
+                lineCap: lineCap,
+                lineJoin: lineJoin,
+                dashArray: dashArray,
+                dashOffset: dashOffset,
+                fill: fill,
+                fillColor: fillColor,
+                fillOpacity: fillOpacity,
+                fillRule: fillRule,
+            });
         }
-        circleMarker.setLatLng(latLng);
-        circleMarker.setRadius(radius);
-        circleMarker.setStyle({
-            color: color,
-            weight: weight,
-            opacity: opacity,
-            lineCap: lineCap,
-            lineJoin: lineJoin,
-            dashArray: dashArray,
-            dashOffset: dashOffset,
-            fill: fill,
-            fillColor: fillColor,
-            fillOpacity: fillOpacity,
-            fillRule: fillRule,
-        });
     }
 
+    onMount(async () => {
+        L = await import('leaflet');
+    });
+
     onDestroy(() => {
-        eventBridge.unregister();
-        circleMarker.removeFrom(getMap());
+        if (eventBridge) {
+            eventBridge.unregister();
+            circleMarker.removeFrom(getMap());
+        }
     });
 
     export function getCircleMarker() {

@@ -1,10 +1,6 @@
 <script>
-    import {createEventDispatcher, getContext, onDestroy, setContext} from 'svelte';
-    import L from 'leaflet';
-
+    import {createEventDispatcher, getContext, onDestroy, onMount, setContext} from 'svelte';
     import EventBridge from '../lib/EventBridge';
-
-    const {getMap} = getContext(L);
 
     export let latLngs;
     export let color = '#3388ff';
@@ -21,39 +17,50 @@
     export let options = {};
     export let events = [];
 
+    let L;
     let polygon;
 
-    setContext(L.Layer, {
+    setContext('L.Layer', {
         getLayer: () => polygon,
     });
 
     const dispatch = createEventDispatcher();
     let eventBridge;
 
+    const {getMap} = getContext('L');
+
     $: {
-        if (!polygon) {
-            polygon = L.polygon(latLngs, options).addTo(getMap());
-            eventBridge = new EventBridge(polygon, dispatch, events);
+        if (L) {
+            if (!polygon) {
+                polygon = L.polygon(latLngs, options).addTo(getMap());
+                eventBridge = new EventBridge(polygon, dispatch, events);
+            }
+            polygon.setLatLngs(latLngs);
+            polygon.setStyle({
+                color: color,
+                weight: weight,
+                opacity: opacity,
+                lineCap: lineCap,
+                lineJoin: lineJoin,
+                dashArray: dashArray,
+                dashOffset: dashOffset,
+                fill: fill,
+                fillColor: fillColor,
+                fillOpacity: fillOpacity,
+                fillRule: fillRule,
+            });
         }
-        polygon.setLatLngs(latLngs);
-        polygon.setStyle({
-            color: color,
-            weight: weight,
-            opacity: opacity,
-            lineCap: lineCap,
-            lineJoin: lineJoin,
-            dashArray: dashArray,
-            dashOffset: dashOffset,
-            fill: fill,
-            fillColor: fillColor,
-            fillOpacity: fillOpacity,
-            fillRule: fillRule,
-        });
     }
 
+    onMount(async () => {
+        L = await import('leaflet');
+    });
+
     onDestroy(() => {
-        eventBridge.unregister();
-        polygon.removeFrom(getMap());
+        if (eventBridge) {
+            eventBridge.unregister();
+            polygon.removeFrom(getMap());
+        }
     });
 
     export function getPolygon() {

@@ -1,10 +1,8 @@
 <script>
-    import {createEventDispatcher, getContext, onDestroy} from 'svelte';
-    import L from 'leaflet';
-
+    import {createEventDispatcher, getContext, onDestroy, onMount} from 'svelte';
     import EventBridge from '../lib/EventBridge';
 
-    const {getMap} = getContext(L);
+    const {getMap} = getContext('L');
 
     export let url;
     export let opacity = 1.0;
@@ -12,24 +10,33 @@
     export let options = {};
     export let events = [];
 
+    let L;
     let tileLayer;
 
     const dispatch = createEventDispatcher();
     let eventBridge;
 
     $: {
-        if (!tileLayer) {
-            tileLayer = L.tileLayer(url, options).addTo(getMap());
-            eventBridge = new EventBridge(tileLayer, dispatch, events);
+        if (L) {
+            if (!tileLayer) {
+                tileLayer = L.tileLayer(url, options).addTo(getMap());
+                eventBridge = new EventBridge(tileLayer, dispatch, events);
+            }
+            tileLayer.setUrl(url);
+            tileLayer.setOpacity(opacity);
+            tileLayer.setZIndex(zIndex);
         }
-        tileLayer.setUrl(url);
-        tileLayer.setOpacity(opacity);
-        tileLayer.setZIndex(zIndex);
     }
 
+    onMount(async () => {
+        L = await import('leaflet');
+    });
+
     onDestroy(() => {
-        eventBridge.unregister();
-        tileLayer.removeFrom(getMap());
+        if (eventBridge) {
+            eventBridge.unregister();
+            tileLayer.removeFrom(getMap());
+        }
     });
 
     export function getTileLayer() {
